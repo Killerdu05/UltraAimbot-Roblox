@@ -627,9 +627,10 @@ local function CreateUI()
     local ScreenGui = Instance.new("ScreenGui")
     ScreenGui.Name = "UltraAimbotUI"
     ScreenGui.Parent = game:GetService("CoreGui")
+    ScreenGui.ResetOnSpawn = false -- Empêche la suppression du GUI lors du respawn
     
     local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 300, 0, 400)
+    MainFrame.Size = UDim2.new(0, 320, 0, 450) -- Légèrement plus grand pour plus de contenu
     MainFrame.Position = UDim2.new(0, 10, 0, 10)
     MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     MainFrame.BorderSizePixel = 0
@@ -637,16 +638,38 @@ local function CreateUI()
     MainFrame.Draggable = true
     MainFrame.Parent = ScreenGui
     
+    -- Ajouter une ombre pour un meilleur look
+    local Shadow = Instance.new("Frame")
+    Shadow.Size = UDim2.new(1, 4, 1, 4)
+    Shadow.Position = UDim2.new(0, -2, 0, -2)
+    Shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Shadow.BackgroundTransparency = 0.5
+    Shadow.BorderSizePixel = 0
+    Shadow.ZIndex = MainFrame.ZIndex - 1
+    Shadow.Parent = ScreenGui
+    
     local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, 0, 0, 30)
+    Title.Size = UDim2.new(1, 0, 0, 35)
     Title.Position = UDim2.new(0, 0, 0, 0)
     Title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     Title.BorderSizePixel = 0
-    Title.Text = "UltraAimbot v2.0"
+    Title.Text = "🎯 UltraAimbot v2.0 - MENU OUVERT"
     Title.TextColor3 = Color3.fromRGB(255, 255, 255)
     Title.TextSize = 16
     Title.Font = Enum.Font.SourceSansBold
     Title.Parent = MainFrame
+    
+    -- Sous-titre avec instructions
+    local Subtitle = Instance.new("TextLabel")
+    Subtitle.Size = UDim2.new(1, 0, 0, 20)
+    Subtitle.Position = UDim2.new(0, 0, 0, 35)
+    Subtitle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Subtitle.BorderSizePixel = 0
+    Subtitle.Text = "Menu automatique - Ajustez vos paramètres ci-dessous"
+    Subtitle.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Subtitle.TextSize = 12
+    Subtitle.Font = Enum.Font.SourceSans
+    Subtitle.Parent = MainFrame
     
     local CloseButton = Instance.new("TextButton")
     CloseButton.Size = UDim2.new(0, 30, 0, 30)
@@ -659,9 +682,21 @@ local function CreateUI()
     CloseButton.Font = Enum.Font.SourceSansBold
     CloseButton.Parent = MainFrame
     
+    -- Bouton pour minimiser/agrandir
+    local MinimizeButton = Instance.new("TextButton")
+    MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
+    MinimizeButton.Position = UDim2.new(1, -60, 0, 0)
+    MinimizeButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+    MinimizeButton.BorderSizePixel = 0
+    MinimizeButton.Text = "-"
+    MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MinimizeButton.TextSize = 16
+    MinimizeButton.Font = Enum.Font.SourceSansBold
+    MinimizeButton.Parent = MainFrame
+    
     local ScrollFrame = Instance.new("ScrollingFrame")
-    ScrollFrame.Size = UDim2.new(1, -10, 1, -40)
-    ScrollFrame.Position = UDim2.new(0, 5, 0, 35)
+    ScrollFrame.Size = UDim2.new(1, -10, 1, -60) -- Ajusté pour le sous-titre
+    ScrollFrame.Position = UDim2.new(0, 5, 0, 60) -- Ajusté pour le sous-titre
     ScrollFrame.BackgroundTransparency = 1
     ScrollFrame.BorderSizePixel = 0
     ScrollFrame.ScrollBarThickness = 6
@@ -931,9 +966,31 @@ local function CreateUI()
         AntiDetection.RandomizeValues = Value
     end)
     
+    -- Variables pour la minimisation
+    local IsMinimized = false
+    local OriginalSize = MainFrame.Size
+    local OriginalPosition = MainFrame.Position
+    
     -- Bouton de fermeture
     CloseButton.MouseButton1Click:Connect(function()
         ScreenGui:Destroy()
+    end)
+    
+    -- Bouton de minimisation
+    MinimizeButton.MouseButton1Click:Connect(function()
+        if IsMinimized then
+            -- Agrandir
+            MainFrame.Size = OriginalSize
+            ScrollFrame.Visible = true
+            MinimizeButton.Text = "-"
+            IsMinimized = false
+        else
+            -- Minimiser
+            MainFrame.Size = UDim2.new(0, 320, 0, 60)
+            ScrollFrame.Visible = false
+            MinimizeButton.Text = "+"
+            IsMinimized = true
+        end
     end)
     
     -- Mise à jour de la taille du scroll
@@ -964,8 +1021,8 @@ end
 local function Start()
     SafeCall(function()
         print("UltraAimbot v2.0 chargé avec succès!")
-        print("Touches: " .. Settings.ToggleKey .. " pour activer/désactiver")
-        print("Interface utilisateur créée")
+        print("Menu ouvert automatiquement")
+        print("Touches: " .. Settings.ToggleKey .. " pour activer/désactiver l'aimbot")
         
         Initialize()
         CreateUI()
@@ -1003,5 +1060,7 @@ getgenv().UltraAimbotAPI = {
     GetAntiDetection = function() return AntiDetection end
 }
 
-print("UltraAimbot v2.0 - Script chargé avec succès!")
-print("Utilisez UltraAimbotAPI pour contrôler le script programmatiquement")
+print("🎯 UltraAimbot v2.0 - Script chargé avec succès!")
+print("📋 Menu ouvert automatiquement - Ajustez vos paramètres!")
+print("⌨️  Touche: " .. Settings.ToggleKey .. " pour activer/désactiver l'aimbot")
+print("🔧 Utilisez UltraAimbotAPI pour contrôler le script programmatiquement")
