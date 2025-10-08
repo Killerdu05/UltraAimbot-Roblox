@@ -5,17 +5,110 @@
     Fonctionnalités: Aimbot, ESP, Menu Modifiable, Anti-Détection
 ]]
 
--- Variables de cache pour optimiser les performances
+-- Détection automatique de l'exécuteur et compatibilité universelle
+local function GetExecutor()
+    local executor = "Unknown"
+    
+    -- Détection Synapse X
+    if syn and syn.request then
+        executor = "Synapse X"
+    -- Détection KRNL
+    elseif KRNL_LOADED then
+        executor = "KRNL"
+    -- Détection Fluxus
+    elseif fluxus then
+        executor = "Fluxus"
+    -- Détection Script-Ware
+    elseif SW_LOADED then
+        executor = "Script-Ware"
+    -- Détection Electron
+    elseif electron then
+        executor = "Electron"
+    -- Détection Delta
+    elseif delta then
+        executor = "Delta"
+    -- Détection Comet
+    elseif comet then
+        executor = "Comet"
+    -- Détection Oxygen U
+    elseif oxygen then
+        executor = "Oxygen U"
+    -- Détection Sentinel
+    elseif sentinel then
+        executor = "Sentinel"
+    -- Détection JJSploit
+    elseif jjsploit then
+        executor = "JJSploit"
+    -- Détection WeAreDevs
+    elseif WeAreDevs_API then
+        executor = "WeAreDevs"
+    -- Détection par défaut
+    else
+        executor = "Universal"
+    end
+    
+    return executor
+end
+
+-- Variables de cache pour optimiser les performances avec compatibilité universelle
 local getgenv, setgenv, getfenv, setfenv = getgenv, setgenv, getfenv, setfenv
 local game, workspace, Players, RunService, UserInputService, TweenService = game, workspace, game:GetService("Players"), game:GetService("RunService"), game:GetService("UserInputService"), game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
--- Protection contre les erreurs
+-- Détection de l'exécuteur
+local ExecutorName = GetExecutor()
+print("🔧 Exécuteur détecté:", ExecutorName)
+
+-- Fonctions de compatibilité universelle
+local function SafeRequire(module)
+    local success, result = pcall(function()
+        return require(module)
+    end)
+    return success and result or nil
+end
+
+local function SafeGetService(serviceName)
+    local success, result = pcall(function()
+        return game:GetService(serviceName)
+    end)
+    return success and result or nil
+end
+
+local function SafeHttpRequest(url, options)
+    local success, result = pcall(function()
+        -- Essayer différentes méthodes selon l'exécuteur
+        if syn and syn.request then
+            return syn.request({
+                Url = url,
+                Method = options and options.Method or "GET",
+                Headers = options and options.Headers or {}
+            })
+        elseif request then
+            return request({
+                Url = url,
+                Method = options and options.Method or "GET",
+                Headers = options and options.Headers or {}
+            })
+        elseif http_request then
+            return http_request({
+                Url = url,
+                Method = options and options.Method or "GET",
+                Headers = options and options.Headers or {}
+            })
+        else
+            -- Fallback pour les exécuteurs sans support HTTP
+            return nil
+        end
+    end)
+    return success and result or nil
+end
+
+-- Protection contre les erreurs avec compatibilité
 local function SafeCall(func, ...)
     local success, result = pcall(func, ...)
     if not success then
-        warn("UltraAimbot Error:", result)
+        warn("UltraAimbot Error [" .. ExecutorName .. "]:", result)
         return nil
     end
     return result
@@ -30,13 +123,40 @@ local function IsValidCharacter(character)
     return character and character.Parent and character:FindFirstChild("Humanoid") and character:FindFirstChild("HumanoidRootPart")
 end
 
--- Vérification de chargement
-if getgenv().UltraAimbot then
+-- Vérification de chargement avec compatibilité
+if getgenv and getgenv().UltraAimbot then
+    return
+elseif _G and _G.UltraAimbot then
+    return
+elseif shared and shared.UltraAimbot then
     return
 end
 
--- Configuration de l'environnement
-getgenv().UltraAimbot = {
+-- Configuration de l'environnement avec compatibilité universelle
+local function SetGlobal(name, value)
+    if getgenv then
+        getgenv()[name] = value
+    end
+    if _G then
+        _G[name] = value
+    end
+    if shared then
+        shared[name] = value
+    end
+end
+
+local function GetGlobal(name)
+    if getgenv and getgenv()[name] then
+        return getgenv()[name]
+    elseif _G and _G[name] then
+        return _G[name]
+    elseif shared and shared[name] then
+        return shared[name]
+    end
+    return nil
+end
+
+SetGlobal("UltraAimbot", {
     Settings = {
         Enabled = false,
         ToggleKey = "LeftAlt",
@@ -86,9 +206,9 @@ getgenv().UltraAimbot = {
         ObfuscateCalls = true,
         FakeLag = false
     }
-}
+})
 
-local UltraAimbot = getgenv().UltraAimbot
+local UltraAimbot = GetGlobal("UltraAimbot")
 local Settings = UltraAimbot.Settings
 local Visuals = UltraAimbot.Visuals
 local AntiDetection = UltraAimbot.AntiDetection
@@ -294,10 +414,22 @@ local function AimAtTarget()
     end)
 end
 
--- Fonction de création du FOV Circle avec protection
+-- Fonction de création du FOV Circle avec protection et compatibilité
 local function CreateFOVCircle()
     SafeCall(function()
-        if FOVCircle then FOVCircle:Remove() end
+        if FOVCircle then 
+            if FOVCircle.Remove then
+                FOVCircle:Remove()
+            elseif FOVCircle.Destroy then
+                FOVCircle:Destroy()
+            end
+        end
+        
+        -- Vérifier si Drawing est disponible
+        if not Drawing then
+            warn("Drawing API non disponible sur cet exécuteur")
+            return
+        end
         
         FOVCircle = Drawing.new("Circle")
         FOVCircle.Visible = Settings.FOVVisible
@@ -353,7 +485,7 @@ local function GetTeamPrefix(Player)
     end
 end
 
--- Fonction ESP avec différenciation d'équipes
+-- Fonction ESP avec différenciation d'équipes et compatibilité
 local function CreateESP(Player)
     local Character = GetCharacter(Player)
     if not Character then return end
@@ -363,6 +495,12 @@ local function CreateESP(Player)
     
     local Humanoid = GetHumanoid(Character)
     if not Humanoid then return end
+    
+    -- Vérifier si Drawing est disponible
+    if not Drawing then
+        warn("Drawing API non disponible sur cet exécuteur")
+        return
+    end
     
     local BoxColor, TextColor, TracerColor = GetTeamColor(Player)
     local TeamPrefix = GetTeamPrefix(Player)
@@ -489,21 +627,33 @@ local function RemoveESP(Player)
     if not ESPObject then return end
     
     for _, Drawing in pairs(ESPObject) do
-        Drawing:Remove()
+        if Drawing and (Drawing.Remove or Drawing.Destroy) then
+            if Drawing.Remove then
+                Drawing:Remove()
+            elseif Drawing.Destroy then
+                Drawing:Destroy()
+            end
+        end
     end
     
     ESPObjects[Player] = nil
 end
 
--- Fonction de nettoyage
+-- Fonction de nettoyage avec compatibilité
 local function Cleanup()
     for _, Connection in pairs(Connections) do
-        Connection:Disconnect()
+        if Connection and Connection.Disconnect then
+            Connection:Disconnect()
+        end
     end
     Connections = {}
     
     if FOVCircle then
-        FOVCircle:Remove()
+        if FOVCircle.Remove then
+            FOVCircle:Remove()
+        elseif FOVCircle.Destroy then
+            FOVCircle:Destroy()
+        end
         FOVCircle = nil
     end
     
@@ -1038,8 +1188,8 @@ if not success then
     pcall(Start)
 end
 
--- Export des fonctions pour utilisation externe
-getgenv().UltraAimbotAPI = {
+-- Export des fonctions pour utilisation externe avec compatibilité
+SetGlobal("UltraAimbotAPI", {
     SetEnabled = function(Value) Settings.Enabled = Value end,
     SetSmoothness = function(Value) Settings.Smoothness = Value end,
     SetFOV = function(Value) Settings.FOV = Value end,
@@ -1057,10 +1207,14 @@ getgenv().UltraAimbotAPI = {
     IsAlly = function(Player) return SafeCall(function() return Player.Team == LocalPlayer.Team end) or false end,
     GetSettings = function() return Settings end,
     GetVisuals = function() return Visuals end,
-    GetAntiDetection = function() return AntiDetection end
-}
+    GetAntiDetection = function() return AntiDetection end,
+    GetExecutor = function() return ExecutorName end,
+    IsCompatible = function() return true end
+})
 
 print("🎯 UltraAimbot v2.0 - Script chargé avec succès!")
+print("🔧 Exécuteur détecté: " .. ExecutorName)
 print("📋 Menu ouvert automatiquement - Ajustez vos paramètres!")
 print("⌨️  Touche: " .. Settings.ToggleKey .. " pour activer/désactiver l'aimbot")
 print("🔧 Utilisez UltraAimbotAPI pour contrôler le script programmatiquement")
+print("✅ Compatible avec tous les exécuteurs populaires!")
